@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>Esri HK • Viewshed Path Player (v3-16 — layer-list fixed)</title>
+<title>Esri HK • Viewshed Path Player (v3-17 — FOV sliders wired)</title>
 
 <!-- ArcGIS JS API -->
 <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css"/>
@@ -72,16 +72,16 @@ arcgis-daylight{position:absolute;bottom:60px;left:12px;display:none}
   <calcite-button id="playBtn" width="full" appearance="solid" color="green" class="spacer" disabled>▶ Play path</calcite-button>
 
   <div class="spacer"></div>
-  <calcite-label layout="inline">Observer Z (m)
+  <calcite-label layout="inline">Observer Z&nbsp;(m)
     <calcite-input id="zValueBox" type="number" readonly number-button-type="none"></calcite-input>
   </calcite-label>
 
   <div class="spacer"></div>
-  <calcite-label layout="inline">Far distance (m)
+  <calcite-label layout="inline">Far distance&nbsp;(m)
     <calcite-input id="farDistanceInput" type="number" value="900" step="10"></calcite-input>
   </calcite-label>
 
-  <calcite-label layout="inline" class="spacer">Speed (m s⁻¹)
+  <calcite-label layout="inline" class="spacer">Speed&nbsp;(m&nbsp;s⁻¹)
     <calcite-input id="stepInput" type="number" value="1" step="0.1" min="0.1"></calcite-input>
   </calcite-label>
 
@@ -89,70 +89,62 @@ arcgis-daylight{position:absolute;bottom:60px;left:12px;display:none}
     <calcite-input id="timeBox" type="text" value="—" readonly></calcite-input>
   </calcite-label>
 
-  <calcite-label layout="inline">Path length (m)
+  <calcite-label layout="inline">Path length&nbsp;(m)
     <calcite-input id="pathLenBox" type="text" value="—" readonly></calcite-input>
   </calcite-label>
 
   <!-- tilt -->
   <div class="spacer slider-row">
-    <span class="slider-caption">Tilt (<span id="tiltDisplay">0</span>°)</span>
+    <span class="slider-caption">Tilt&nbsp;(<span id="tiltDisplay">0</span>°)</span>
     <calcite-slider id="tiltSlider" min="0" max="90" step="1" value="0"></calcite-slider>
   </div>
 
   <!-- heading -->
   <div class="spacer">
     <span class="slider-caption" style="display:block;text-align:center">
-      Heading (<span id="headingDisplay">0</span>°)
+      Heading&nbsp;(<span id="headingDisplay">0</span>°)
     </span>
     <div id="headingDial"><div id="headingDot"></div></div>
   </div>
 
-  <!-- FOV -->
+  <!-- FOV sliders -->
   <div class="spacer slider-row">
-    <span class="slider-caption">Horizontal FOV (<span id="hFOVDisplay">85</span>°)</span>
+    <span class="slider-caption">Horizontal&nbsp;FOV&nbsp;(<span id="hFOVDisplay">85</span>°)</span>
     <calcite-slider id="hFOVSlider" min="1" max="120" step="1" value="85"></calcite-slider>
   </div>
   <div class="spacer slider-row">
-    <span class="slider-caption">Vertical FOV (<span id="vFOVDisplay">60</span>°)</span>
+    <span class="slider-caption">Vertical&nbsp;FOV&nbsp;(<span id="vFOVDisplay">60</span>°)</span>
     <calcite-slider id="vFOVSlider" min="1" max="90" step="1" value="60"></calcite-slider>
   </div>
 
   <!-- playback -->
   <div class="spacer slider-row">
-    <span class="slider-caption">Playback ×<span id="boostDisplay">100</span></span>
+    <span class="slider-caption">Playback&nbsp;×<span id="boostDisplay">100</span></span>
     <calcite-slider id="boostSlider" min="1" max="400" step="1" value="100"></calcite-slider>
   </div>
 </calcite-card>
 
 <script>
-/* --------------------------------------------------------------------
-   basic constants & helpers
--------------------------------------------------------------------- */
-const FRAME = 20;            // ms per frame
+/* ------------ constants ------------ */
+const FRAME = 20;   // ms/frame
 const API_KEY = "AAPT85fOqywZsicJupSmVSCGrgFpDBlKu644DCHtK39exnA9xmC_Hm5TyVM4mLaGVKV6eRw7VYKxJJ5nS-zPLHcoo9xbabGFwUxsGi_yR29bMXU6gLGWkl1oV8VbPSscj0_aetT-ua6-vh6CCdJzyU-10P1pmPVQbaoZyEHsVaVVB76JzmlDMoOBRvOvYhp9QoKvdbqWXQFctlUZSKCZsrlPSIHmlbEEhVMdiMJ9WNVUcgaoP6vjpTU9SjgLLwtPd9VfAT2_uoVPBcfu";
 
 let speedBoost = 100;
 
-/* --------------------------------------------------------------------
-   UI toggles
--------------------------------------------------------------------- */
+/* ------------ UI toggles ------------ */
 const previewBox=document.getElementById("previewContainer"),
       panel     =document.getElementById("toolPanel"),
       previewBtn=document.getElementById("previewToggle"),
       panelBtn  =document.getElementById("panelToggle");
-function label(){previewBtn.textContent=previewBox.style.display==="none"?"Show preview":"Hide preview";
-                 panelBtn.textContent  =panel.style.display==="none"?"Show controls":"Hide controls";}
-previewBtn.onclick=()=>{previewBox.style.display=previewBox.style.display==="none"?"block":"none";label();};
-panelBtn.onclick  =()=>{panel.style.display     =panel.style.display==="none"?"block":"none";label();};
-label();
-document.getElementById("sunlightToggle").onclick=()=>{
-  const w=document.getElementById("daylightWidget");
-  w.style.display=w.style.display==="none"?"block":"none";
-};
+const refreshLabels=()=>{previewBtn.textContent=previewBox.style.display==="none"?"Show preview":"Hide preview";
+                         panelBtn.textContent  =panel.style.display==="none"?"Show controls":"Hide controls";};
+previewBtn.onclick=()=>{previewBox.style.display=previewBox.style.display==="none"?"block":"none";refreshLabels();};
+panelBtn.onclick  =()=>{panel.style.display     =panel.style.display==="none"?"block":"none";refreshLabels();};
+refreshLabels();
+document.getElementById("sunlightToggle").onclick=()=>{const w=document.getElementById("daylightWidget");
+  w.style.display=w.style.display==="none"?"block":"none";};
 
-/* --------------------------------------------------------------------
-   joystick heading
--------------------------------------------------------------------- */
+/* ------------ joystick ------------ */
 let curHeading=0,dragging=false,vs=null;const R=50;
 function setHeading(deg){
   if(deg<-180)deg+=360;if(deg>180)deg-=360;curHeading=deg;
@@ -169,9 +161,7 @@ dial.addEventListener("pointermove",e=>{if(dragging)drag(e);});
 dial.addEventListener("pointerup",  e=>{dragging=false;dial.releasePointerCapture(e.pointerId);});
 dial.addEventListener("pointercancel",()=>dragging=false);
 
-/* --------------------------------------------------------------------
-   ArcGIS logic
--------------------------------------------------------------------- */
+/* ------------ ArcGIS logic ------------ */
 require([
   "esri/config","esri/Camera","esri/views/SceneView",
   "esri/analysis/ViewshedAnalysis","esri/analysis/Viewshed",
@@ -189,77 +179,78 @@ require([
 )=>{
   esriConfig.apiKey=API_KEY;
 
-  /* DOM refs */
+  /* ----- DOM refs ----- */
   const sceneEl=document.getElementById("sceneview"),
         drawBtn=document.getElementById("drawPathBtn"),
         editBtn=document.getElementById("editPathBtn"),
         playBtn=document.getElementById("playBtn"),
-        stepIn =document.getElementById("stepInput"),
+        stepIn=document.getElementById("stepInput"),
         timeBox=document.getElementById("timeBox"),
         pathLenBox=document.getElementById("pathLenBox"),
-        farIn  =document.getElementById("farDistanceInput"),
-        tiltS  =document.getElementById("tiltSlider"),
-        tiltD  =document.getElementById("tiltDisplay"),
-        hFOVS  =document.getElementById("hFOVSlider"),
-        vFOVS  =document.getElementById("vFOVSlider"),
-        hFOVD  =document.getElementById("hFOVDisplay"),
-        vFOVD  =document.getElementById("vFOVDisplay"),
-        boostS =document.getElementById("boostSlider"),
-        boostD =document.getElementById("boostDisplay"),
-        zBox   =document.getElementById("zValueBox"),
+        farIn=document.getElementById("farDistanceInput"),
+        tiltS=document.getElementById("tiltSlider"), tiltD=document.getElementById("tiltDisplay"),
+        hFOVS=document.getElementById("hFOVSlider"), hFOVD=document.getElementById("hFOVDisplay"),
+        vFOVS=document.getElementById("vFOVSlider"), vFOVD=document.getElementById("vFOVDisplay"),
+        boostS=document.getElementById("boostSlider"), boostD=document.getElementById("boostDisplay"),
+        zBox=document.getElementById("zValueBox"),
         previewWrapper=document.querySelector("#previewContainer .mini-wrapper");
 
   sceneEl.addEventListener("arcgisViewReadyChange",()=>{
 
     /* daylight widget */
-    document.getElementById("daylightWidget").view = sceneEl.view;
+    document.getElementById("daylightWidget").view=sceneEl.view;
 
-    /* ★★★ FIX LAYER-LIST — create via JS to bind View ★★★ */
-    const layerList = new LayerList({ view: sceneEl.view, listItemCreatedFunction: (e)=>{e.item.panel={content:"legend"};} });
-    const layerListExpand = new Expand({view: sceneEl.view, content: layerList, expanded:false});
-    sceneEl.view.ui.add(layerListExpand,"top-right");
+    /* layer list */
+    const ll=new LayerList({view:sceneEl.view,listItemCreatedFunction:e=>e.item.panel={content:"legend"}});
+    sceneEl.view.ui.add(new Expand({view:sceneEl.view,content:ll}),"top-right");
 
-    /* preview mini-scene */
+    /* preview scene */
     const mini=document.createElement("arcgis-scene");
     mini.setAttribute("item-id","de397ac7c24240ec920ead9b44e23ac0");
     mini.setAttribute("api-key",API_KEY);
     previewWrapper.appendChild(mini);
 
     /* layers & analysis */
-    const lineLayer=new GraphicsLayer(),
-          vsAnal   =new ViewshedAnalysis();
-    sceneEl.view.map.add(lineLayer);
-    sceneEl.view.analyses.add(vsAnal);
+    const lineLayer=new GraphicsLayer(),vsAnal=new ViewshedAnalysis();
+    sceneEl.view.map.add(lineLayer);sceneEl.view.analyses.add(vsAnal);
 
     /* sketch */
     const sketch=new SketchViewModel({
-      view:sceneEl.view,
-      layer:lineLayer,
+      view:sceneEl.view,layer:lineLayer,
       defaultCreateOptions:{mode:"click",hasZ:true},
       defaultUpdateOptions:{tool:"reshape"},
       updateOnGraphicClick:false
     });
 
-    /* state & helpers — identical to previous version … (unchanged) */
+    /* -------------- state -------------- */
     let lineG=null,traveledG=null,pts=[],idx=0,timer=null,state="idle";
-    const setBtn=()=>{playBtn.textContent={idle:"▶ Play path",playing:"❚❚ Pause",paused:"▶ Resume"}[state];
-                      playBtn.color=state==="playing"?"red":"green";
-                      playBtn.disabled=!lineG;};
-    const geomLen=g=>g.paths.reduce((a,p)=>a+p.slice(1).reduce((d,c,i)=>d+Math.hypot(c[0]-p[i][0],c[1]-p[i][1]),0),0);
-    const showLen=()=>pathLenBox.value=lineG?geomLen(lineG.geometry).toFixed(1):"—";
+    const btn=()=>{playBtn.textContent={idle:"▶ Play path",playing:"❚❚ Pause",paused:"▶ Resume"}[state];
+                   playBtn.color=state==="playing"?"red":"green";
+                   playBtn.disabled=!lineG;};
+
+    /* helpers */
+    const len=g=>g.paths.reduce((a,p)=>a+p.slice(1).reduce((d,c,i)=>d+Math.hypot(c[0]-p[i][0],c[1]-p[i][1]),0),0);
+    const showLen=()=>pathLenBox.value=lineG?len(lineG.geometry).toFixed(1):"—";
     const showTime=()=>{if(!lineG){timeBox.value="—";return;}
-      const s=geomLen(lineG.geometry)/Math.max(+stepIn.value||0.1,0.1);
+      const s=len(lineG.geometry)/Math.max(+stepIn.value||0.1,0.1);
       const h=Math.floor(s/3600),m=Math.floor(s%3600/60),sc=Math.floor(s%60);
       timeBox.value=`${h?h+" h ":""}${m?m+" m ":""}${sc}s`;};
 
-    /* sync viewshed */
+    /* viewshed sync */
     const sync=()=>{if(!vs)return;
-      vs.farDistance=+farIn.value;vs.tilt=+tiltS.value;vs.heading=curHeading;
-      vs.horizontalFieldOfView=+hFOVS.value;vs.verticalFieldOfView=+vFOVS.value;};
-    [farIn,hFOVS,vFOVS].forEach(el=>el.addEventListener("calciteInputInput",sync));
+      vs.farDistance=+farIn.value;
+      vs.tilt=+tiltS.value;
+      vs.heading=curHeading;
+      vs.horizontalFieldOfView=+hFOVS.value;
+      vs.verticalFieldOfView=+vFOVS.value;};
+
+    /* input listeners */
+    farIn.addEventListener("calciteInputInput",sync);
     tiltS.addEventListener("calciteSliderInput",()=>{tiltD.textContent=tiltS.value;sync();});
-    hFOVS.addEventListener("calciteSliderInput",()=>hFOVD.textContent=hFOVS.value);
-    vFOVS.addEventListener("calciteSliderInput",()=>vFOVD.textContent=vFOVS.value);
+
+    /* ★ wired sliders → viewshed */
+    hFOVS.addEventListener("calciteSliderInput",()=>{hFOVD.textContent=hFOVS.value;sync();});
+    vFOVS.addEventListener("calciteSliderInput",()=>{vFOVD.textContent=vFOVS.value;sync();});
 
     stepIn.addEventListener("calciteInputInput",showTime);
 
@@ -268,11 +259,12 @@ require([
       reDensify(true);if(vs&&pts[idx])vs.observer=pts[idx];
     });
 
-    /* draw / edit … (unchanged) */
+    /* draw / edit (unchanged) */
     drawBtn.onclick=()=>{stop();lineLayer.removeAll();vsAnal.viewsheds.removeAll();
       lineG=traveledG=vs=null;editBtn.disabled=true;sketch.create("polyline");};
-    sketch.on("vertex-add",e=>{if(e.state==="active"){const v=e.vertices.at(-1);if(v&&(v[2]==null||isNaN(v[2])))v[2]=90;}});
+    sketch.on("vertex-add",e=>{if(e.state==="active"){const v=e.vertices.at(-1);if(!v[2])v[2]=90;}});
     sketch.on("create",e=>{if(e.state==="complete"){ensureZ(e.graphic.geometry);commit(e.graphic);}});
+
     editBtn.onclick=()=>{if(lineG){stop();sketch.update(lineG);}};
     sketch.on("update",e=>{if(e.tool==="reshape"&&e.state==="complete"){ensureZ(e.graphic.geometry);commit(e.graphic);}});
 
@@ -287,12 +279,11 @@ require([
         symbol:new SimpleLineSymbol({color:"rgba(0,200,0,0.8)",width:8})
       });
       lineLayer.add(traveledG);
-      state="idle";setBtn();showLen();showTime();reDensify(false);
+      state="idle";btn();showLen();showTime();reDensify(false);
     }
 
     function initVS(reset=false){
-      const p=lineG.geometry.paths[0][0];
-      const obs={x:p[0],y:p[1],z:p[2],spatialReference:lineG.geometry.spatialReference};
+      const p=lineG.geometry.paths[0][0],obs={x:p[0],y:p[1],z:p[2],spatialReference:lineG.geometry.spatialReference};
       if(!vs||!reset){vsAnal.viewsheds.removeAll();vs=new Viewshed({observer:obs});sync();vsAnal.viewsheds.add(vs);}
       else vs.observer=obs;
       setHeading(head(lineG.geometry.paths[0]));
@@ -300,22 +291,18 @@ require([
     const head=p=>p.length<2?0:(Math.atan2(p[1][0]-p[0][0],p[1][1]-p[0][1])*180/Math.PI+360)%360;
 
     /* densify uses playback only */
-    function densify(geom,dist){
+    const densify=(geom,d)=>{
       const out=[],sr=geom.spatialReference;
       geom.paths.forEach(path=>{
         for(let i=0;i<path.length-1;i++){
           const [ax,ay,az]=path[i],[bx,by,bz]=path[i+1],
-                dx=bx-ax,dy=by-ay,l=Math.hypot(dx,dy),n=Math.floor(l/dist);
-          for(let s=0;s<=n;s++){
-            const t=s*dist/l;if(t>1)continue;
-            out.push({x:ax+dx*t,y:ay+dy*t,z:az+(bz-az)*t,spatialReference:sr});
-          }
-        }
-      });
+                dx=bx-ax,dy=by-ay,l=Math.hypot(dx,dy),n=Math.floor(l/d);
+          for(let s=0;s<=n;s++){const t=s*d/l;if(t>1)continue;
+            out.push({x:ax+dx*t,y:ay+dy*t,z:az+(bz-az)*t,spatialReference:sr});}}});
       const last=geom.paths.at(-1).at(-1);
       out.push({x:last[0],y:last[1],z:last[2],spatialReference:sr});
       return out;
-    }
+    };
     function reDensify(keep){
       if(!lineG)return;
       const dist=speedBoost*FRAME/1000;
@@ -330,11 +317,11 @@ require([
 
     /* playback buttons */
     playBtn.onclick=()=>{state==="idle"?start():state==="playing"?pause():resume();};
-    function start(){reDensify(false);if(!pts.length)return;idx=0;updateTravel();state="playing";setBtn();timer=setInterval(frame,FRAME);}
+    function start(){reDensify(false);if(!pts.length)return;idx=0;updateTravel();state="playing";btn();timer=setInterval(frame,FRAME);}
     function frame(){if(idx>=pts.length){stop();return;}vs.observer=pts[idx++];updateTravel();}
-    function pause(){clearInterval(timer);state="paused";setBtn();}
-    function resume(){state="playing";setBtn();timer=setInterval(frame,FRAME);}
-    function stop(){clearInterval(timer);idx=pts.length;updateTravel();state="idle";setBtn();}
+    function pause(){clearInterval(timer);state="paused";btn();}
+    function resume(){state="playing";btn();timer=setInterval(frame,FRAME);}
+    function stop(){clearInterval(timer);idx=pts.length;updateTravel();state="idle";btn();}
 
     /* Z read-out */
     reactiveUtils.watch(()=>{const v=vsAnal.viewsheds.getItemAt(0);return v?[v.observer?.z]:[null];},
@@ -345,22 +332,19 @@ require([
       const pv=mini.view;pv.environment=sceneEl.view.environment;pv.ui.components=[];
       reactiveUtils.watch(()=>vsAnal.viewsheds.getItemAt(0),v=>{
         if(!v)return;
-        const upd=()=>pv.camera=new Camera({
-          position:v.observer,heading:v.heading,tilt:v.tilt,
-          fov:Math.hypot(v.horizontalFieldOfView,v.verticalFieldOfView)
-        });
+        const upd=()=>pv.camera=new Camera({position:v.observer,heading:v.heading,tilt:v.tilt,
+                                            fov:Math.hypot(v.horizontalFieldOfView,v.verticalFieldOfView)});
         upd();
         reactiveUtils.watch(()=>[v.observer,v.heading,v.tilt,v.horizontalFieldOfView,v.verticalFieldOfView],upd,{initial:true});
       },{initial:true});
     });
 
-    const ensureZ=g=>g.paths.forEach(p=>p.forEach(v=>{if(v[2]==null||isNaN(v[2]))v[2]=90;}));
+    const ensureZ=g=>g.paths.forEach(p=>p.forEach(v=>{if(!v[2])v[2]=90;}));
     window.addEventListener("blur",pause);
 
     /* initial */
-    setHeading(0);setBtn();
-    hFOVD.textContent=hFOVS.value;vFOVD.textContent=vFOVS.value;
-    boostD.textContent=boostS.value;
+    setHeading(0);btn();
+    hFOVD.textContent=hFOVS.value;vFOVD.textContent=vFOVS.value;boostD.textContent=boostS.value;
   });
 });
 </script>
