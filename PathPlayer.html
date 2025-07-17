@@ -24,7 +24,7 @@ header{background:#004874;color:#fff;font:700 1.25rem/1.2 system-ui;padding:.75r
                   border:3px solid dimgrey;background:#fff}
 
 /* tool panel */
-#toolPanel{position:absolute;bottom:100px;left:10px;width:310px;padding-inline:5px}
+#toolPanel{position:absolute;bottom:50px;left:10px;width:310px;padding-inline:5px}
 .spacer{margin-top:.5rem}
 
 .slider-row{display:flex;align-items:center;gap:.5rem}
@@ -42,12 +42,9 @@ input[type=number]{-moz-appearance:textfield}
             transform:translate(-50%,-50%);pointer-events:none;transition:left .05s linear,top .05s linear}
 
 /* daylight + toggles */
-#sunlightToggle{position:absolute;bottom:20px;left:12px;z-index:1100}
-arcgis-daylight{position:absolute;bottom:60px;left:12px;display:none}
-
 #previewToggle,#panelToggle{position:absolute;z-index:1100}
-#panelToggle {bottom:65px;left:10px}
-#previewToggle{bottom:65px;left:90px}
+#panelToggle {bottom:12px;left:10px}
+#previewToggle{bottom:12px;left:90px}
 </style>
 </head>
 
@@ -61,11 +58,10 @@ arcgis-daylight{position:absolute;bottom:60px;left:12px;display:none}
   <arcgis-compass position="top-right"></arcgis-compass>
   <arcgis-expand position="top-right" mode="floating"><arcgis-layer-list position="top-leading" show-heading></arcgis-layer-list></arcgis-expand>
   <arcgis-expand position="top-right" mode="floating"><arcgis-weather position="bottom-right"></arcgis-weather></arcgis-expand>
+  <arcgis-expand position="top-right" mode="floating"><arcgis-daylight position="bottom-right"></arcgis-daylight></arcgis-expand>
 </arcgis-scene>
 
 <!-- daylight & toggles -->
-<arcgis-daylight id="daylightWidget"></arcgis-daylight>
-<calcite-button id="sunlightToggle" scale="s">Sunlight</calcite-button>
 <calcite-button id="panelToggle"   scale="s">Hide Tools</calcite-button>
 <calcite-button id="previewToggle" scale="s">Hide Preview</calcite-button>
 
@@ -147,8 +143,6 @@ esriConfig.apiKey =
 
 /* DOM handles */
 const sceneEl  = document.getElementById("sceneview"),
-      dayBtn   = document.getElementById("sunlightToggle"),
-      dayW     = document.getElementById("daylightWidget"),
       playBtn  = document.getElementById("playBtn"),
       previewBox = document.getElementById("previewContainer"),
       toolPanel = document.getElementById("toolPanel");
@@ -162,7 +156,7 @@ document.getElementById("panelToggle").onclick=()=>{
   toolPanel.style.display   = toolPanel.style.display==="none"?"":"none";
   event.target.textContent  = toolPanel.style.display==="none"?"Show Tools":"Hide Tools";
 };
-dayBtn.onclick=()=>dayW.style.display=dayW.style.display==="none"?"block":"none";
+
 
 /* parameter inputs */
 const stepIn=document.getElementById("stepIn"),
@@ -181,7 +175,7 @@ let   playbackBoost = +boostS.value || 20;       // playback factor
 const PATH_LAYER_ID = "ec0b0d555753402eb59969568efa5afc";
 
 sceneEl.addEventListener("arcgisViewReadyChange",()=>{
-  const view=sceneEl.view; dayW.view=view;
+  const view=sceneEl.view; 
 
   /* layers */
   const lineLayer=new GraphicsLayer(); view.map.add(lineLayer);
