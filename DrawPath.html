@@ -37,10 +37,8 @@ calcite-input[readonly]{background:#82828226;border:1px solid #ccc}
             transform:translate(-50%,-50%);pointer-events:none;transition:left .05s linear,top .05s linear}
 
 /* toggles */
-#sunlightToggle{position:absolute;bottom:20px;left:12px;z-index:1100}
-#previewToggle {position:absolute;bottom:20px;left:90px;z-index:1100}
-#panelToggle  {position:absolute;bottom:20px;left:185px;z-index:1100}
-arcgis-daylight{position:absolute;bottom:60px;left:12px;display:none}
+#previewToggle {position:absolute;bottom:20px;left:12px;z-index:1100}
+#panelToggle  {position:absolute;bottom:20px;left:112px;z-index:1100}
 </style>
 </head>
 
@@ -55,11 +53,10 @@ arcgis-daylight{position:absolute;bottom:60px;left:12px;display:none}
   <arcgis-navigation-toggle position="top-right"></arcgis-navigation-toggle>
   <arcgis-compass position="top-right"></arcgis-compass>
   <arcgis-expand position="top-right" mode="floating"><arcgis-weather position="bottom-right"></arcgis-weather></arcgis-expand>
+  <arcgis-expand position="top-right" mode="floating"><arcgis-daylight position="bottom-right"></arcgis-daylight></arcgis-expand>
 </arcgis-scene>
 
 <!-- daylight & toggles -->
-<arcgis-daylight id="daylightWidget"></arcgis-daylight>
-<calcite-button id="sunlightToggle" scale="s">Sunlight</calcite-button>
 <calcite-button id="previewToggle"  scale="s">Hide preview</calcite-button>
 <calcite-button id="panelToggle"    scale="s">Hide controls</calcite-button>
 
@@ -142,8 +139,6 @@ const refreshLabels=()=>{previewBtn.textContent=previewBox.style.display==="none
 previewBtn.onclick=()=>{previewBox.style.display=previewBox.style.display==="none"?"block":"none";refreshLabels();};
 panelBtn.onclick  =()=>{panel.style.display     =panel.style.display==="none"?"block":"none";refreshLabels();};
 refreshLabels();
-document.getElementById("sunlightToggle").onclick=()=>{const w=document.getElementById("daylightWidget");
-  w.style.display=w.style.display==="none"?"block":"none";};
 
 /* ------------ joystick ------------ */
 let curHeading=0,dragging=false,vs=null;const R=50;
@@ -197,9 +192,6 @@ require([
         previewWrapper=document.querySelector("#previewContainer .mini-wrapper");
 
   sceneEl.addEventListener("arcgisViewReadyChange",()=>{
-
-    /* daylight widget */
-    document.getElementById("daylightWidget").view=sceneEl.view;
 
     /* layer list */
     const ll=new LayerList({view:sceneEl.view,listItemCreatedFunction:e=>e.item.panel={content:"legend"}});
